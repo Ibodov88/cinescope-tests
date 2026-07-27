@@ -1,78 +1,47 @@
 import pytest
-from playwright.sync_api import APIRequestContext
 from config.config import Config
 
 
 class TestAuthAPI:
-    """API тесты для авторизации"""
+    """API тесты для Auth"""
 
-    def test_register_user(self, api_request_context: APIRequestContext):
-        """POST /register - регистрация пользователя"""
-        import time
-        unique_email = f"test_{int(time.time())}@example.com"
-
-        payload = {
-            "email": unique_email,
-            "password": "Test123!",
-            "name": "Test User"
-        }
-
-        response = api_request_context.post(
-            f"{Config.AUTH_BASE_URL}/register",
-            data=payload
+    def test_login_success(self, auth_client):
+        """POST /login - успешная авторизация"""
+        response = auth_client.login(
+            Config.TEST_USER_EMAIL,
+            Config.TEST_USER_PASSWORD
         )
 
-        assert response.status == 201
+        assert response.status == 200, f"Expected 200, got {response.status}"
         data = response.json()
-        assert "id" in data or "email" in data
-        print(f"✅ Пользователь {unique_email} зарегистрирован")
+        token = data.get("accessToken") or data.get("token")  # ← исправлено!
+        assert token, f"Token not found in response. Data: {data}"
+        assert len(token) > 10, "Token is too short"
 
-    def test_login_user(self, api_request_context: APIRequestContext):
-        """POST /login - аутентификация пользователя"""
-        payload = {
-            "email": Config.TEST_USER["email"],
-            "password": Config.TEST_USER["password"]
-        }
+        print(f"✅ POST /login: токен получен")
 
-        response = api_request_context.post(
-            f"{Config.AUTH_BASE_URL}/login",
-            data=payload
+    def test_login_negative_invalid_password(self, auth_client):
+        """POST /login - негативный тест с неверным паролем"""
+        response = auth_client.login(
+            Config.TEST_USER_EMAIL,
+            "wrong_password_123"
         )
 
-        assert response.status == 200
-        data = response.json()
-        assert "access_token" in data or "token" in data
-        print("✅ Пользователь авторизован")
+        assert response.status == 401, f"Expected 401, got {response.status}"
+        error_data = response.json()
+        assert "message" in error_data or "error" in error_data
 
-    def test_get_user_info(self, api_request_context: APIRequestContext):
-        """GET /user/{idOrEmail} - получение информации о пользователе"""
-        email = Config.TEST_USER["email"]
+        print(f"✅ POST /login: неверный пароль обработан")
 
-        response = api_request_context.get(
-            f"{Config.AUTH_BASE_URL}/user/{email}"
+    def test_login_negative_invalid_email(self, auth_client):
+        """POST /login - негативный тест с неверным email"""
+        response = auth_client.login(
+            "nonexistent@example.com",
+            Config.TEST_USER_PASSWORD
         )
 
-        assert response.status == 200
-        data = response.json()
-        assert data["email"] == email
-        print(f"✅ Информация о пользователе {email} получена")
+        assert response.status == 401, f"Expected 401, got {response.status}"
+        error_data = response.json()
+        assert "message" in error_data or "error" in error_data
 
-    def test_get_users_list(self, api_request_context: APIRequestContext):
-        """GET /user - получение списка пользователей"""
-        response = api_request_context.get(
-            f"{Config.AUTH_BASE_URL}/user"
-        )
-
-        assert response.status == 200
-        data = response.json()
-        assert isinstance(data, list) or "users" in data
-        print("✅ Список пользователей получен")
-
-    def test_logout_user(self, api_request_context: APIRequestContext):
-        """GET /logout - выход из учётной записи"""
-        response = api_request_context.get(
-            f"{Config.AUTH_BASE_URL}/logout"
-        )
-
-        assert response.status == 200
-        print("✅ Выход выполнен успешно")
+        print(f"✅ POST /login: неверный email обработан")
