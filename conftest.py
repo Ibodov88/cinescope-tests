@@ -44,12 +44,12 @@ def movies_client(api_request_context: APIRequestContext):
 
 @pytest.fixture(scope="session")
 def auth_token(auth_client):
-    """Фикстура для получения токена авторизации"""
+    Config.validate()
     response = auth_client.login(Config.TEST_USER_EMAIL, Config.TEST_USER_PASSWORD)
-    assert response.status == 200, f"Login failed: {response.status}"
+    assert response.status == 200
     data = response.json()
-    token = data.get("access_token") or data.get("token")
-    assert token, "Token not found in response"
+    token = data.get("accessToken")  # изменил с access_Token на accessToken
+    assert token
     return token
 
 
@@ -57,8 +57,8 @@ def auth_token(auth_client):
 # 4. Настройки для UI тестов (если понадобятся)
 # ============================================
 
-@pytest.fixture(autouse=True)
-def setup(page):
-    """Настройки для UI тестов"""
+@pytest.fixture
+def ui_page(page):
+    """Фикстура для UI тестов"""
     page.set_viewport_size({"width": 1920, "height": 1080})
-    yield
+    yield page

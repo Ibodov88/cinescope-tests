@@ -25,3 +25,18 @@ class Config:
     # Тестовые данные (через переменные окружения)
     TEST_USER_EMAIL = os.getenv("TEST_USER_EMAIL")
     TEST_USER_PASSWORD = os.getenv("TEST_USER_PASSWORD")
+
+    @staticmethod
+    def validate():
+        """Проверяет, что переменные окружения заданы"""
+        missing = []
+        if Config.TEST_USER_EMAIL is None:
+            missing.append("TEST_USER_EMAIL")
+        if Config.TEST_USER_PASSWORD is None:
+            missing.append("TEST_USER_PASSWORD")
+
+        if missing:
+            raise EnvironmentError(
+                f"Missing env vars: {', '.join(missing)}\n"
+                f"Create .env from .env.example"
+            )

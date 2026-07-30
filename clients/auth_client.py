@@ -16,9 +16,14 @@ class AuthClient:
         """Выход из учётной записи"""
         return self.context.get(f"{self.base_url}/logout")
 
-    def register(self, email: str, password: str, name: str) -> APIResponse:
+    def register(self, email: str, password: str, full_name: str) -> APIResponse:
         """Регистрация пользователя"""
-        payload = {"email": email, "password": password, "name": name}
+        payload = {
+            "email": email,
+            "password": password,
+            "passwordRepeat": password,  # ← добавить
+            "fullName": full_name  # ← было "name"
+        }
         return self.context.post(f"{self.base_url}/register", data=payload)
 
     def refresh_token(self) -> APIResponse:

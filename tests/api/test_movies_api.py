@@ -7,10 +7,11 @@ class TestMoviesAPI:
 
     def test_get_movies_success(self, movies_client):
         """GET /movies - успешное получение списка фильмов"""
-        response = movies_client.get_movies(page=1, limit=5)
+        response = movies_client.get_movies(page=1, page_size=5)
 
         # Статус
         assert response.status == 200, f"Expected 200, got {response.status}"
+        data = response.json()
 
         # Структура ответа
         data = response.json()
@@ -21,6 +22,8 @@ class TestMoviesAPI:
         assert "pageSize" in data, "Missing 'pageSize' field"  # ← было "limit"
         assert "count" in data, "Missing 'count' field"
         assert "movies" in data, "Missing 'movies' field"  # ← было "data"
+
+        assert data["pageSize"] == 5, f"Expected pageSize 5, got {data['pageSize']}"
 
         # Проверка типов
         assert isinstance(data["page"], int), "page should be integer"
@@ -41,7 +44,7 @@ class TestMoviesAPI:
     def test_get_movie_by_id_success(self, movies_client):
         """GET /movies/{id} - успешное получение фильма по ID"""
         # Получаем ID фильма из списка
-        list_response = movies_client.get_movies(page=1, limit=1)
+        list_response = movies_client.get_movies(page=1, page_size=1)
         assert list_response.status == 200
         list_data = list_response.json()
 
@@ -76,12 +79,12 @@ class TestMoviesAPI:
     def test_get_movies_pagination(self, movies_client):
         """GET /movies - проверка пагинации"""
         # Первая страница
-        response1 = movies_client.get_movies(page=1, limit=3)
+        response1 = movies_client.get_movies(page=1, page_size=3)
         assert response1.status == 200
         data1 = response1.json()
 
         # Вторая страница
-        response2 = movies_client.get_movies(page=2, limit=3)
+        response2 = movies_client.get_movies(page=2, page_size=3)
         assert response2.status == 200
         data2 = response2.json()
 
