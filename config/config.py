@@ -1,5 +1,7 @@
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class Config:
     """Конфигурация проекта Cinescope"""
@@ -21,5 +23,5 @@ class Config:
     TIMEOUT = 30000  # 30 секунд
 
     # Тестовые данные (через переменные окружения)
-    TEST_USER_EMAIL = os.getenv("TEST_USER_EMAIL", "tim.ibodov88@gmail.com")
-    TEST_USER_PASSWORD = os.getenv("TEST_USER_PASSWORD", "Googleru1@")
+    TEST_USER_EMAIL = os.getenv("TEST_USER_EMAIL")
+    TEST_USER_PASSWORD = os.getenv("TEST_USER_PASSWORD")
