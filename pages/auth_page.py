@@ -25,11 +25,10 @@ class AuthPage(BasePage):
         self.profile_link: Locator = page.get_by_role("link", name="Профиль")
 
         # ===== Сообщения об ошибках и успехе =====
-        # Ищем по точному тексту из UI
         self.error_message = page.locator("text=Неверная почта или пароль")
         self.success_message = page.locator("text=Вы зарегистрировались")
 
-        # ===== Дополнительный поиск по классам =====
+        # ===== Toast контейнер =====
         self.toast_container = page.locator(".toast, [class*='toast'], [class*='alert']")
 
     # ===== Методы для логина =====
@@ -69,29 +68,23 @@ class AuthPage(BasePage):
 
     def wait_for_error_message(self, expected_message: str = None):
         """Дождаться появления ошибки и проверить текст"""
-        # Ждем появления любого сообщения об ошибке
         self.error_message.first.wait_for(state="visible", timeout=10000)
         if expected_message:
             expect(self.error_message.first).to_contain_text(expected_message)
 
     def wait_for_success_message(self, expected_message: str = None):
-        """Дождаться появления успешного сообщения после регистрации"""
-        # Проверяем, что мы перешли на страницу логина ИЛИ видим сообщение
-        try:
-            expect(self.page).to_have_url(f"{Config.BASE_URL}/login", timeout=5000)
-        except AssertionError:
-            # Если редиректа нет, ищем сообщение на текущей странице
-            success_message = self.page.locator("text=Вы зарегистрировались")
-            success_message.wait_for(state="visible", timeout=5000)
-            if expected_message:
-                expect(success_message).to_contain_text(expected_message)
-            return
-
-        # Если редирект был, ищем сообщение на странице логина
-        success_message = self.page.locator("text=Вы зарегистрировались")
-        success_message.wait_for(state="visible", timeout=5000)
+        """Дождаться появления успешного сообщения"""
+        # Дожидаемся перехода на страницу логина
+        expect(self.page).to_have_url(f"{Config.BASE_URL}/login", timeout=10000)
+        # Ищем сообщение на странице логина
+        self.success_message.wait_for(state="visible", timeout=5000)
         if expected_message:
-            expect(success_message).to_contain_text(expected_message)
+            expect(self.success_message).to_contain_text(expected_message)
+
+    def get_toast_message(self) -> str:
+        """Получить текст toast сообщения"""
+        self.toast_container.first.wait_for(state="visible", timeout=5000)
+        return self.toast_container.first.inner_text()
 
     def logout(self):
         self.profile_link.click()
