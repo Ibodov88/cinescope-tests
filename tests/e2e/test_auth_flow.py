@@ -1,50 +1,59 @@
 import pytest
 from pages.auth_page import AuthPage
-from config.config import Config
+from playwright.sync_api import expect  # ← добавили импорт
+import random
+import string
 
 
-class TestAuthFlow:
-    """E2E тесты для авторизации и регистрации"""
+class TestLoginFlow:
+    """E2E тесты для сценария логина"""
 
-    def test_successful_login(self, page):
+    @pytest.fixture
+    def auth_page(self, page):
+        return AuthPage(page)
+
+    def test_successful_login(self, auth_page):
         """Тест успешного входа"""
-        # Arrange
-        auth_page = AuthPage(page)
         auth_page.open_login()
+        auth_page.login_as_user()
 
-        # Act
-        auth_page.login(Config.TEST_USER["email"], Config.TEST_USER["password"])
-
-        # Assert
+        auth_page.wait_for_success_login()
         assert auth_page.is_logged_in(), "Пользователь не авторизован"
+
         print("✅ Успешный вход выполнен")
 
-    def test_login_with_invalid_password(self, page):
-        """Тест входа с неверным паролем"""
-        # Arrange
-        auth_page = AuthPage(page)
+    def test_login_with_invalid_credentials(self, auth_page):
+        """Тест входа с неверными данными"""
         auth_page.open_login()
+        auth_page.login("invalid@example.com", "wrong_password")
 
-        # Act
-        auth_page.login(Config.TEST_USER["email"], "wrong_password")
+        # Проверка toast сообщения об ошибке
+        auth_page.wait_for_error_message()
+        toast_text = auth_page.get_toast_message()
+        assert "error" in toast_text.lower() or "неверно" in toast_text
 
-        # Assert
-        error = auth_page.get_error_message()
-        assert error, "Ошибка должна быть отображена"
-        print("✅ Неверный пароль обработан корректно")
+        print("✅ Неверные данные обработаны корректно")
 
-    def test_successful_registration(self, page):
+    def test_successful_registration(self, auth_page):
         """Тест успешной регистрации"""
-        # Arrange
-        auth_page = AuthPage(page)
+        # Генерируем уникальный email: test + 3 случайные буквы + @mail.com
+        random_letters = ''.join(random.choices(string.ascii_lowercase, k=3))
+        unique_email = f"test{random_letters}@mail.com"
+
         auth_page.open_register()
 
-        # Act (используем уникальный email)
-        import time
-        unique_email = f"test_{int(time.time())}@example.com"
-        auth_page.register(unique_email, Config.TEST_USER["password"], "Test User")
+        # Заполняем поля
+        auth_page.register_full_name_input.fill("Don Sebastiani")
+        auth_page.register_email_input.fill(unique_email)
+        auth_page.register_password_input.fill("12345678Aa")
+        auth_page.register_password_repeat_input.fill("12345678Aa")
 
-        # Assert
-        assert auth_page.is_logged_in() or auth_page.get_success_message(), \
-            "Регистрация не выполнена"
-        print("✅ Регистрация выполнена успешно")
+        # Нажимаем кнопку
+        auth_page.register_submit_button.click()
+
+        # Ждем перехода на страницу логина
+        auth_page.page.wait_for_url("**/login", timeout=10000)
+
+        # Проверяем, что сообщение "Вы зарегистрировались" появилось
+        success_message = auth_page.page.locator("text=Вы зарегистрировались")
+        expect(success_message).to_be_visible(timeout=5000)
