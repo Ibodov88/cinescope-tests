@@ -7,6 +7,17 @@ from clients.auth_client import AuthClient
 from clients.movies_client import MoviesClient
 
 # ============================================
+# 0. Настройка Playwright для data-qa-id
+# ============================================
+
+from playwright.sync_api import Playwright
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_id_attribute(playwright):
+    playwright.selectors.set_test_id_attribute("data-qa-id")
+
+
+# ============================================
 # 1. Основная фикстура для API запросов
 # ============================================
 

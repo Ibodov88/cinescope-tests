@@ -1,50 +1,42 @@
 import pytest
+import uuid
 from pages.auth_page import AuthPage
+from playwright.sync_api import expect
 from config.config import Config
 
 
-class TestAuthFlow:
-    """E2E тесты для авторизации и регистрации"""
+class TestLoginFlow:
+    """E2E тесты для сценария логина"""
 
-    def test_successful_login(self, page):
+    @pytest.fixture
+    def auth_page(self, page):
+        return AuthPage(page)
+
+    def test_successful_login(self, auth_page):
         """Тест успешного входа"""
-        # Arrange
-        auth_page = AuthPage(page)
         auth_page.open_login()
+        auth_page.login_as_user()
 
-        # Act
-        auth_page.login(Config.TEST_USER["email"], Config.TEST_USER["password"])
+        auth_page.wait_for_success_login()
+        assert auth_page.is_logged_in()
 
-        # Assert
-        assert auth_page.is_logged_in(), "Пользователь не авторизован"
         print("✅ Успешный вход выполнен")
 
-    def test_login_with_invalid_password(self, page):
-        """Тест входа с неверным паролем"""
-        # Arrange
-        auth_page = AuthPage(page)
+    def test_login_with_invalid_credentials(self, auth_page):
+        """Тест входа с неверными данными"""
         auth_page.open_login()
+        auth_page.login("invalid@example.com", "wrong_password")
 
-        # Act
-        auth_page.login(Config.TEST_USER["email"], "wrong_password")
+        auth_page.wait_for_error_message()
 
-        # Assert
-        error = auth_page.get_error_message()
-        assert error, "Ошибка должна быть отображена"
-        print("✅ Неверный пароль обработан корректно")
+        print("✅ Неверные данные обработаны корректно")
 
-    def test_successful_registration(self, page):
+    def test_successful_registration(self, auth_page):
         """Тест успешной регистрации"""
-        # Arrange
-        auth_page = AuthPage(page)
+        unique_email = f"test-{uuid.uuid4().hex[:8]}@mail.com"
+
         auth_page.open_register()
+        auth_page.register("Don Sebastian", unique_email, "12345678Aa")
+        auth_page.wait_for_successful_registration()
 
-        # Act (используем уникальный email)
-        import time
-        unique_email = f"test_{int(time.time())}@example.com"
-        auth_page.register(unique_email, Config.TEST_USER["password"], "Test User")
-
-        # Assert
-        assert auth_page.is_logged_in() or auth_page.get_success_message(), \
-            "Регистрация не выполнена"
-        print("✅ Регистрация выполнена успешно")
+        print(f"✅ Регистрация {unique_email} выполнена успешно")
