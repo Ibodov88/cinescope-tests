@@ -21,15 +21,15 @@ class AuthPage(BasePage):
         self.register_password_repeat_input: Locator = page.get_by_test_id("register_password_repeat_input")
         self.register_submit_button: Locator = page.get_by_test_id("register_submit_button")
 
-        # ===== Универсальные локаторы после входа =====
+        # ===== Универсальные локаторы =====
         self.profile_link: Locator = page.get_by_role("link", name="Профиль")
 
-        # ===== Сообщения об ошибках и успехе =====
+        # ===== Сообщения =====
         self.error_message = page.locator("text=Неверная почта или пароль")
         self.success_message = page.locator("text=Вы зарегистрировались")
 
-        # ===== Toast контейнер =====
-        self.toast_container = page.locator(".toast, [class*='toast'], [class*='alert']")
+        # ===== Toast =====
+        self.toast_container = page.locator("[role='alert']")
 
     # ===== Методы для логина =====
 
@@ -51,10 +51,20 @@ class AuthPage(BasePage):
         self.navigate_to(f"{Config.BASE_URL}/register")
 
     def register(self, full_name: str, email: str, password: str):
+        """Выполнить регистрацию"""
+        self.register_full_name_input.click()
         self.register_full_name_input.fill(full_name)
+
+        self.register_email_input.click()
         self.register_email_input.fill(email)
+
+        self.register_password_input.click()
         self.register_password_input.fill(password)
+
+        self.register_password_repeat_input.click()
         self.register_password_repeat_input.fill(password)
+
+        self.page.wait_for_timeout(1000)
         self.register_submit_button.click()
 
     # ===== Проверки состояния =====
@@ -66,26 +76,13 @@ class AuthPage(BasePage):
         expect(self.page).not_to_have_url(f"{Config.BASE_URL}/login")
         expect(self.profile_link).to_be_visible()
 
-    def wait_for_error_message(self, expected_message: str = None):
-        """Дождаться появления ошибки и проверить текст"""
-        self.error_message.first.wait_for(state="visible", timeout=10000)
-        if expected_message:
-            expect(self.error_message.first).to_contain_text(expected_message)
-
-    def wait_for_success_message(self, expected_message: str = None):
-        """Дождаться появления успешного сообщения"""
-        # Дожидаемся перехода на страницу логина
-        expect(self.page).to_have_url(f"{Config.BASE_URL}/login", timeout=10000)
-        # Ищем сообщение на странице логина
-        self.success_message.wait_for(state="visible", timeout=5000)
-        if expected_message:
-            expect(self.success_message).to_contain_text(expected_message)
-
-    def get_toast_message(self) -> str:
-        """Получить текст toast сообщения"""
-        self.toast_container.first.wait_for(state="visible", timeout=5000)
-        return self.toast_container.first.inner_text()
-
-    def logout(self):
-        self.profile_link.click()
+    def wait_for_successful_registration(self):
+        """Дождаться успешной регистрации"""
         expect(self.page).to_have_url(f"{Config.BASE_URL}/login")
+        expect(self.success_message).to_be_visible()
+
+    def wait_for_error_message(self, expected_message: str = None):
+        """Дождаться появления сообщения об ошибке"""
+        self.error_message.wait_for(state="visible", timeout=10000)
+        if expected_message:
+            expect(self.error_message).to_contain_text(expected_message)
