@@ -24,9 +24,14 @@ class AuthPage(BasePage):
         # ===== Универсальные локаторы =====
         self.profile_link: Locator = page.get_by_role("link", name="Профиль")
 
+        # ===== Toast / Сообщения об ошибках =====
+        # Используем role='status' — это стабильный атрибут
+        self.toast_error = page.locator("[role='status']")
+        self.toast_success = page.locator("text=Вы зарегистрировались")
+
         # ===== Сообщения =====
-        self.error_message = page.locator("text=Неверная почта или пароль")
-        self.success_message = page.locator("text=Вы зарегистрировались")
+        self.toast_error = page.locator("[role='status']")
+        self.toast_success = page.locator("text=Вы зарегистрировались")
 
         # ===== Toast =====
         self.toast_container = page.locator("[role='alert']")
@@ -52,19 +57,13 @@ class AuthPage(BasePage):
 
     def register(self, full_name: str, email: str, password: str):
         """Выполнить регистрацию"""
-        self.register_full_name_input.click()
         self.register_full_name_input.fill(full_name)
-
-        self.register_email_input.click()
         self.register_email_input.fill(email)
-
-        self.register_password_input.click()
         self.register_password_input.fill(password)
-
-        self.register_password_repeat_input.click()
         self.register_password_repeat_input.fill(password)
 
-        self.page.wait_for_timeout(1000)
+        # Ожидаем, что кнопка станет активной (валидация пройдена)
+        expect(self.register_submit_button).to_be_enabled(timeout=5000)
         self.register_submit_button.click()
 
     # ===== Проверки состояния =====
@@ -79,10 +78,11 @@ class AuthPage(BasePage):
     def wait_for_successful_registration(self):
         """Дождаться успешной регистрации"""
         expect(self.page).to_have_url(f"{Config.BASE_URL}/login")
-        expect(self.success_message).to_be_visible()
+        expect(self.toast_success).to_be_visible()
 
     def wait_for_error_message(self, expected_message: str = None):
         """Дождаться появления сообщения об ошибке"""
-        self.error_message.wait_for(state="visible", timeout=10000)
+        expect(self.toast_error).to_have_count(1)
+        self.toast_error.wait_for(state="visible", timeout=10000)
         if expected_message:
-            expect(self.error_message).to_contain_text(expected_message)
+            expect(self.toast_error).to_contain_text(expected_message)

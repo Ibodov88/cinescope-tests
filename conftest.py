@@ -1,5 +1,5 @@
 import pytest
-from playwright.sync_api import Playwright, APIRequestContext
+from playwright.sync_api import (Playwright, APIRequestContext)
 from config.config import Config
 
 # Импорты из папки clients (исправлено!)
@@ -10,10 +10,8 @@ from clients.movies_client import MoviesClient
 # 0. Настройка Playwright для data-qa-id
 # ============================================
 
-from playwright.sync_api import Playwright
-
 @pytest.fixture(scope="session", autouse=True)
-def setup_test_id_attribute(playwright):
+def setup_test_id_attribute(playwright: Playwright):
     playwright.selectors.set_test_id_attribute("data-qa-id")
 
 
