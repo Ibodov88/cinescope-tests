@@ -25,9 +25,9 @@ class AuthPage(BasePage):
         self.profile_link: Locator = page.get_by_role("link", name="Профиль")
 
         # ===== Toast / Сообщения об ошибках =====
-        # Используем ID контейнера + текст внутри (работает на dev)
-        self.toast_error = page.locator("#_rht_toaster:has-text('Неверная почта или пароль')")
-        self.toast_success = page.locator("#_rht_toaster:has-text('Вы зарегистрировались')")
+        # Используем role='status' — реальный toast-элемент
+        self.toast_error = page.locator("[role='status']:has-text('Неверная почта или пароль')")
+        self.toast_success = page.locator("[role='status']:has-text('Вы зарегистрировались')")
 
     # ===== Методы для логина =====
 
@@ -75,10 +75,10 @@ class AuthPage(BasePage):
 
     def wait_for_error_message(self, expected_message: str = None):
         """Дождаться появления сообщения об ошибке"""
-        # Ждём появления toast
-        self.toast_error.wait_for(state="visible", timeout=10000)
-        # Проверяем уникальность
+        # Проверяем уникальность (должен быть ровно один toast)
         expect(self.toast_error).to_have_count(1)
+        # Проверяем видимость
+        self.toast_error.wait_for(state="visible", timeout=10000)
         # Проверяем текст (если передан)
         if expected_message:
             expect(self.toast_error).to_contain_text(expected_message)

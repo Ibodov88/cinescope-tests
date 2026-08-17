@@ -26,8 +26,7 @@ class TestLoginFlow:
         """Тест входа с неверными данными"""
         auth_page.open_login()
         auth_page.login("invalid@example.com", "wrong_password")
-
-        auth_page.wait_for_error_message()
+        auth_page.wait_for_error_message("Неверная почта или пароль")
 
         print("✅ Неверные данные обработаны корректно")
 
