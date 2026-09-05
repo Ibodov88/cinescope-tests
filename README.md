@@ -23,3 +23,11 @@ playwright install
 ```bash
 pytest tests/api -v
 ```
+## Запуск гибридных E2E-тестов
+
+Перед запуском активируйте виртуальное окружение и убедитесь, что в `.env`
+указано dev-окружение.
+
+```bash
+pytest tests/e2e/test_movies_api_e2e.py -v
+```
