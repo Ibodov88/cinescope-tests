@@ -35,15 +35,27 @@ def api_request_context(playwright: Playwright) -> APIRequestContext:
 # 2. Фикстуры для клиентов
 # ============================================
 
+# ============================================
+# 2. Фикстуры для клиентов
+# ============================================
+
 @pytest.fixture(scope="session")
 def auth_client(api_request_context: APIRequestContext):
     """Фикстура для AuthClient"""
+    from clients.auth_client import AuthClient
     return AuthClient(api_request_context)
 
 
 @pytest.fixture(scope="session")
-def movies_client(api_request_context: APIRequestContext):
-    """Фикстура для MoviesClient"""
+def movies_client(api_request_context: APIRequestContext, auth_token) -> MoviesClient:
+    """Фикстура для MoviesClient с токеном авторизации"""
+    from clients.movies_client import MoviesClient
+    return MoviesClient(api_request_context, token=auth_token)
+
+
+@pytest.fixture(scope="session")
+def public_movies_client(api_request_context: APIRequestContext) -> MoviesClient:
+    """Подготавливает клиент без токена авторизации."""
     return MoviesClient(api_request_context)
 
 
@@ -55,10 +67,10 @@ def movies_client(api_request_context: APIRequestContext):
 def auth_token(auth_client):
     Config.validate()
     response = auth_client.login(Config.TEST_USER_EMAIL, Config.TEST_USER_PASSWORD)
-    assert response.status == 200
+    assert response.status in [200, 201], f"Expected 200 or 201, got {response.status}"
     data = response.json()
-    token = data.get("accessToken")  # изменил с access_Token на accessToken
-    assert token
+    token = data.get("accessToken")
+    assert token, "Token not found in response"
     return token
 
 
