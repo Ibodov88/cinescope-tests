@@ -29,5 +29,5 @@ pytest tests/api -v
 указано dev-окружение.
 
 ```bash
-pytest tests/e2e/test_movies_api_e2e.py -v
+pytest tests/e2e/test_movies_api_e2e.py -v --tracing=retain-on-failure
 ```
