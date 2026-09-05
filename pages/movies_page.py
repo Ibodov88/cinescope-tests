@@ -1,61 +1,58 @@
-from pages.base_page import BasePage
-from playwright.sync_api import Page, Locator
+import re
+
+from playwright.sync_api import Locator, Page, expect
+
 from config.config import Config
+from pages.base_page import BasePage
 
 
 class MoviesPage(BasePage):
-    """Page Object для страницы фильмов"""
+    """Каталог фильмов и переход к деталям выбранного фильма."""
 
     def __init__(self, page: Page):
         super().__init__(page)
-
-        # ===== Локаторы =====
-        self.movie_card = page.locator("div.rounded-xl.border")
-        self.movie_title = page.locator("h3")
-        self.movie_description = page.locator("[data-qa-id='movie-description']")
-
-        # Если data-qa-id нет, используем другие селекторы
-        self.movie_card_alt = page.locator(".movie-card, [class*='movie']")
+        self.movie_cards = page.get_by_test_id(re.compile(r"^movie_more_\d+$"))
 
     def open(self):
-        """Открыть страницу фильмов"""
+        """Открыть каталог с его стандартными параметрами."""
         self.navigate_to(f"{Config.BASE_URL}/movies")
 
-    def get_movie_by_title(self, title: str) -> Locator:
-        """Найти заголовок фильма по тексту"""
-        return self.page.locator("h3", has_text=title)
-
-    def get_movie_image_by_title(self, title: str) -> Locator:
-        """Найти изображение фильма по названию"""
-        return self.page.locator(f"img[alt='{title}']")
-
-    def get_details_button_by_title(self, title: str) -> Locator:
-        """Найти кнопку перехода к деталям фильма"""
-        card = self.movie_card.filter(
-            has=self.page.locator("h3", has_text=title)
-        )
-        return card.get_by_role("button", name="Подробнее о фильме")
-
-    def get_details_title(self, title: str) -> Locator:
-        """Найти название фильма на странице деталей"""
-        return self.page.locator("h2", has_text=title)
-
     def get_movie_by_id(self, movie_id: int) -> Locator:
-        """Найти фильм по ID (через data-qa-id)"""
-        return self.page.locator(f"[data-qa-id='movie-{movie_id}']")
+        return self.page.get_by_test_id(f"movie_more_{movie_id}")
 
-    def is_movie_visible(self, title: str) -> bool:
-        """Проверить, виден ли фильм с таким названием"""
-        return self.get_movie_by_title(title).is_visible()
+    def expect_movie_card(self, movie_id: int, name: str):
+        """Проверить содержимое конкретной карточки, найденной по ID."""
+        card = self.get_movie_by_id(movie_id)
+        expect(card).to_be_visible(timeout=Config.TIMEOUT)
+        expect(card.get_by_role("heading", level=3)).to_have_text(name)
+        expect(card.get_by_role("img")).to_be_visible()
+        # Dev использует «Подробнее о фильме», другая версия UI — «Подробнее».
+        details_button = card.get_by_role(
+            "button", name=re.compile(r"^Подробнее(?: о фильме)?$"),
+        )
+        expect(details_button).to_be_visible()
+        expect(card).to_have_attribute("href", f"/movies/{movie_id}")
 
-    def is_movie_visible_by_id(self, movie_id: int) -> bool:
-        """Проверить, виден ли фильм с таким ID"""
-        return self.get_movie_by_id(movie_id).is_visible()
+    def get_first_movie_id(self) -> int:
+        """Взять ID из стабильного атрибута первой карточки."""
+        card = self.movie_cards.first
+        expect(card).to_be_visible(timeout=Config.TIMEOUT)
+        test_id = card.get_attribute("data-qa-id")
+        assert test_id is not None, "У карточки отсутствует data-qa-id"
+        return int(test_id.removeprefix("movie_more_"))
 
-    def wait_for_movie(self, title: str, timeout: int = 10000):
-        """Дождаться появления фильма с таким названием"""
-        self.get_movie_by_title(title).wait_for(state="visible", timeout=timeout)
+    def open_movie_details(self, movie_id: int):
+        self.get_movie_by_id(movie_id).click()
+        expect(self.page).to_have_url(
+            re.compile(rf"/movies/{movie_id}/?(?:\?.*)?$"),
+            timeout=Config.TIMEOUT,
+        )
 
-    def get_movie_count(self) -> int:
-        """Получить количество фильмов на странице"""
-        return self.movie_card.count()
+    def expect_details(self, movie_id: int, name: str):
+        expect(self.page).to_have_url(
+            re.compile(rf"/movies/{movie_id}/?(?:\?.*)?$"),
+            timeout=Config.TIMEOUT,
+        )
+        expect(self.page.get_by_role("heading", level=2, name=name, exact=True)).to_be_visible(
+            timeout=Config.TIMEOUT,
+        )

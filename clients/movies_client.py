@@ -18,10 +18,11 @@ class MoviesClient:
         return headers
 
     def get_movies(
-            self,
-            page: int = 1,
-            page_size: int = 10,
-            published: bool = True,
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        published: bool = True,
+        created_at: str | None = None,
     ) -> APIResponse:
         """Получение списка фильмов с пагинацией и публикацией"""
         params = {
@@ -29,17 +30,19 @@ class MoviesClient:
             "pageSize": page_size,
             "published": published,
         }
+        if created_at is not None:
+            params["createdAt"] = created_at
         return self.context.get(
             f"{self.base_url}/movies",
             params=params,
-            headers=self._get_headers()
+            headers=self._get_headers(),
         )
 
     def get_movie_by_id(self, movie_id: int) -> APIResponse:
         """Получение фильма по ID"""
         return self.context.get(
             f"{self.base_url}/movies/{movie_id}",
-            headers=self._get_headers()
+            headers=self._get_headers(),
         )
 
     def create_movie(self, movie_data: dict) -> APIResponse:
@@ -49,7 +52,7 @@ class MoviesClient:
         return self.context.post(
             f"{self.base_url}/movies",
             data=movie_data,
-            headers=self._get_headers()
+            headers=self._get_headers(),
         )
 
     def delete_movie(self, movie_id: int) -> APIResponse:
@@ -58,5 +61,5 @@ class MoviesClient:
             raise RuntimeError("Delete movie is forbidden on PROD environment")
         return self.context.delete(
             f"{self.base_url}/movies/{movie_id}",
-            headers=self._get_headers()
+            headers=self._get_headers(),
         )

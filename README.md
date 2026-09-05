@@ -23,11 +23,16 @@ playwright install
 ```bash
 pytest tests/api -v
 ```
+
 ## Запуск гибридных E2E-тестов
 
 Перед запуском активируйте виртуальное окружение и убедитесь, что в `.env`
 указано dev-окружение.
 
 ```bash
-pytest tests/e2e/test_movies_api_e2e.py -v --tracing=retain-on-failure
+TEST_ENV=dev pytest tests/e2e/test_movies_api_e2e.py -q --tracing=retain-on-failure --screenshot=only-on-failure
 ```
+
+Оба сценария читают публичный каталог без токена. API и UI используют первую
+страницу из 9 опубликованных фильмов с сортировкой `createdAt=desc`.
+Для проверки стабильности выполните команду три раза подряд.

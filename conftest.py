@@ -1,8 +1,7 @@
 import pytest
-from playwright.sync_api import (Playwright, APIRequestContext)
+from playwright.sync_api import APIRequestContext, Playwright
 from config.config import Config
 
-# Импорты из папки clients (исправлено!)
 from clients.auth_client import AuthClient
 from clients.movies_client import MoviesClient
 
@@ -35,28 +34,22 @@ def api_request_context(playwright: Playwright) -> APIRequestContext:
 # 2. Фикстуры для клиентов
 # ============================================
 
-# ============================================
-# 2. Фикстуры для клиентов
-# ============================================
-
 @pytest.fixture(scope="session")
 def auth_client(api_request_context: APIRequestContext):
     """Фикстура для AuthClient"""
-    from clients.auth_client import AuthClient
     return AuthClient(api_request_context)
 
 
 @pytest.fixture(scope="session")
-def movies_client(api_request_context: APIRequestContext, auth_token) -> MoviesClient:
-    """Фикстура для MoviesClient с токеном авторизации"""
-    from clients.movies_client import MoviesClient
-    return MoviesClient(api_request_context, token=auth_token)
+def movies_client(api_request_context: APIRequestContext) -> MoviesClient:
+    """Клиент публичных запросов без зависимости от авторизации."""
+    return MoviesClient(api_request_context)
 
 
 @pytest.fixture(scope="session")
-def public_movies_client(api_request_context: APIRequestContext) -> MoviesClient:
-    """Подготавливает клиент без токена авторизации."""
-    return MoviesClient(api_request_context)
+def public_movies_client(movies_client: MoviesClient) -> MoviesClient:
+    """Явное имя публичного клиента для E2E-тестов."""
+    return movies_client
 
 
 # ============================================
