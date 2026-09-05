@@ -1,8 +1,5 @@
 import pytest
-import uuid
 from pages.movies_page import MoviesPage
-from clients.movies_client import MoviesClient
-from config.config import Config
 
 
 class TestMoviesE2E:
@@ -89,7 +86,7 @@ class TestMoviesE2E:
 
 
     # ==========================================
-    # Сценарий 2: Удаление фильма через API → проверка в UI
+    # Сценарий 2: UI → API → UI
     # ==========================================
 
     def test_ui_movie_matches_api(self, movies_client, movies_page):
